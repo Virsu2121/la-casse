@@ -5,6 +5,12 @@ import urllib.parse, urllib.request, urllib.robotparser, webbrowser
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO
+
+try:
+    from PIL import Image
+except ImportError:  # colours are optional: without Pillow the project page simply shows none
+    Image = None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PAGE = os.path.join(HERE, "la-casse.html")
@@ -44,6 +50,7 @@ PREVIEW_HOSTS = {"www.typographicposters.com", "posterhouse.org", "bpando.org",
                  "grapheine.com", "www.grapheine.com", "identitydesigned.com", "www.logodesignlove.com", "standardsmanual.com",
                  "signs.org", "madparis.fr", "www.mockupworld.co"}
 PREVIEW_TTL = 21600
+KNOWN_IMAGES = set()  # only images already listed by a feed or Are.na may be analysed
 JUNK_IMAGE = re.compile(r"gravatar|avatar|emoji|wp-includes|spacer|pixel|/icons?/|favicon", re.I)
 CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
        "font-src https://fonts.gstatic.com; img-src http: https:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'")
@@ -146,6 +153,12 @@ def to_iso(value):
     return (d if d.tzinfo else d.replace(tzinfo=timezone.utc)).astimezone(timezone.utc).isoformat()
 
 
+def clean_author(value):
+    value = re.sub(r"\s+", " ", value or "").strip()
+    value = re.sub(r"\S+@\S+", "", value).strip(" ()")
+    return value[:80]
+
+
 def parse_feed(source, raw):
     items = []
     for el in ET.fromstring(raw).iter():
@@ -178,6 +191,7 @@ def parse_feed(source, raw):
         items.append({
             "source": source,
             "title": title.result()[1] or link,
+            "author": clean_author(f.get("creator") or f.get("author") or ""),
             "link": link,
             "date": to_iso(f.get("pubDate") or f.get("published") or f.get("updated") or f.get("date")),
             "excerpt": text[:260] + ("…" if len(text) > 260 else ""),
@@ -218,6 +232,7 @@ def build_feeds():
     with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
         results = list(pool.map(lambda kv: read_feed(*kv), FEEDS.items()))
     items = [i for _, rows, _ in results for i in rows]
+    KNOWN_IMAGES.update(u for i in items for u in i["images"])
     items.sort(key=lambda i: i["date"], reverse=True)
     return {
         "updated": datetime.now(timezone.utc).isoformat(),
@@ -254,7 +269,9 @@ def build_arena_images(query):
         for b in data.get("contents", []):
             src = (((b.get("image") or {}).get("display") or {}).get("url")) or ""
             if b.get("class") == "Image" and b.get("id") and safe_url(src, ""):
+                KNOWN_IMAGES.add(src)
                 rows.append({"image": src, "title": b.get("title") or c.get("title") or "", "channel": c.get("title") or "",
+                             "author": (b.get("user") or {}).get("username") or b.get("connected_by_username") or "",
                              "link": f"https://www.are.na/block/{b['id']}"})
     return {"query": query, "items": rows}
 
@@ -316,6 +333,41 @@ def preview_image(url):
     return image
 
 
+colour_cache = {}
+
+
+def palette(url):
+    """Up to five dominant colours of an image, read in memory and never saved."""
+    if Image is None or not safe_url(url, ""):
+        return []
+    if url in colour_cache:
+        return colour_cache[url]
+    try:
+        im = Image.open(BytesIO(fetch(url)))
+        im.draft("RGB", (160, 160))
+        im = im.convert("RGB")
+        im.thumbnail((96, 96))
+        q = im.quantize(colors=8, method=Image.Quantize.MEDIANCUT)
+        pal, counts = q.getpalette(), sorted(q.getcolors() or [], reverse=True)
+        total = sum(c for c, _ in counts) or 1
+        picked = []
+        for count, index in counts:
+            r, g, b = pal[index * 3:index * 3 + 3]
+            near = next((p for p in picked if abs(p[0] - r) + abs(p[1] - g) + abs(p[2] - b) < 48), None)
+            if near:
+                near[3] += count
+            else:
+                picked.append([r, g, b, count])
+        picked.sort(key=lambda p: -p[3])
+        colours = [{"hex": "#%02x%02x%02x" % (r, g, b), "share": round(100 * c / total)} for r, g, b, c in picked[:5] if c / total >= 0.03]
+    except Exception:
+        colours = []
+    if len(colour_cache) > 6000:
+        colour_cache.clear()
+    colour_cache[url] = colours
+    return colours
+
+
 class LocalServer(ThreadingHTTPServer):
     allow_reuse_address = False  # on Windows, reuse would let an old copy keep answering on the same port
     daemon_threads = True
@@ -370,6 +422,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(arena_image_cache.get(query.lower(), FEED_TTL, lambda: build_arena_images(query)))
             except Exception as e:
                 return self.send_json({"error": type(e).__name__}, 502)
+        if url.path == "/api/colors":
+            image = urllib.parse.parse_qs(url.query).get("u", [""])[0]
+            return self.send_json({"colors": palette(image) if image in KNOWN_IMAGES else []})
+        if url.path == "/galerie.json" and os.path.exists(os.path.join(HERE, "galerie.json")):
+            with open(os.path.join(HERE, "galerie.json"), "rb") as f:
+                return self.send_body(200, f.read(), "application/json; charset=utf-8")
         if url.path == "/api/preview":
             return self.send_json({"image": preview_image(urllib.parse.parse_qs(url.query).get("u", [""])[0])})
         self.send_json({"error": "introuvable"}, 404)

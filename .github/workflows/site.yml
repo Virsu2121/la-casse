@@ -29,6 +29,7 @@ jobs:
           python-version: "3.13"
       - name: Préparer le site
         run: |
+          pip install --quiet pillow
           mkdir _site
           cp la-casse.html _site/index.html
           python construire_galerie.py _site/galerie.json

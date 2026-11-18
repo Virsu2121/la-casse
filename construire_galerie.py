@@ -1,6 +1,6 @@
-"""Builds galerie.json for the hosted site: titles, links and image addresses only.
-No article text and no image file is stored; images stay hosted by the original sites."""
-import json, sys, time
+"""Builds galerie.json for the hosted site: titles, short descriptions, links, image addresses and colours.
+No article and no image file is stored; images stay hosted by the original sites."""
+import concurrent.futures, json, sys, time
 from datetime import datetime, timezone
 
 import serveur
@@ -8,6 +8,13 @@ import serveur
 ARENA_TERMS = ["poster", "logo", "typography", "ephemera", "branding", "ticket", "packaging", "lanyard", "band merch",
                "wayfinding", "album cover", "mockup", "texture", "illustration", "web design"]
 MIN_FEEDS = 5
+EXCERPT = 220
+
+
+def short(text):
+    if len(text) <= EXCERPT:
+        return text
+    return text[:EXCERPT].rsplit(" ", 1)[0].rstrip(",;:") + "…"
 
 
 def main(out_path):
@@ -22,7 +29,8 @@ def main(out_path):
             image = serveur.preview_image(i["link"])
             images = [image] if image else []
         if images:
-            items.append({"source": i["source"], "title": i["title"], "link": i["link"], "date": i["date"], "images": images, "image": images[0], "excerpt": "", "html": ""})
+            items.append({"source": i["source"], "title": i["title"], "author": i.get("author", ""), "link": i["link"], "date": i["date"],
+                          "images": images, "image": images[0], "excerpt": short(i["excerpt"]), "html": ""})
     arena = {}
     for term in ARENA_TERMS:
         try:
@@ -30,6 +38,14 @@ def main(out_path):
         except Exception as e:
             print("Are.na", term, type(e).__name__, flush=True)
         time.sleep(1)
+
+    start = time.time()
+    targets = [(i, i["images"][0]) for i in items] + [(r, r["image"]) for rows in arena.values() for r in rows]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        for (owner, _), colours in zip(targets, pool.map(lambda t: serveur.palette(t[1]), targets)):
+            owner["colors"] = colours
+    print("couleurs", sum(1 for o, _ in targets if o["colors"]), "/", len(targets), f"{time.time() - start:.0f}s", flush=True)
+
     data = {"updated": datetime.now(timezone.utc).isoformat(), "items": items, "arena": arena}
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
