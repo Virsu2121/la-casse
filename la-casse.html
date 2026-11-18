@@ -146,11 +146,40 @@ main { padding-block: 22px 72px; }
 .op-sections { display: grid; gap: 28px; }
 .op-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; align-items: start; }
 .op-similar { display: grid; gap: 32px; margin-top: 112px; padding-top: 48px; border-top: 1px solid var(--rule); }
-.op-simgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px 28px; align-items: start; }
+.op-simgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 44px 28px; align-items: start; }
 .op-sim { display: grid; gap: 12px; color: inherit; text-decoration: none; min-width: 0; }
 .op-sim b { font-size: 15px; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; }
 .op-sim span { font-size: 13px; color: var(--muted); }
 .op-sim:hover b { text-decoration: underline; }
+.op-nav { position: fixed; top: 50%; z-index: 6; width: 46px; height: 46px; margin-top: -23px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); color: var(--ink); border: 1px solid var(--rule); box-shadow: var(--shadow); }
+.op-nav.prev { left: max(14px, env(safe-area-inset-left, 0px)); }
+.op-nav.next { right: max(14px, env(safe-area-inset-right, 0px)); }
+.op-nav:hover { background: var(--blue); color: var(--on-blue); border-color: var(--blue); }
+.op-nav svg { width: 18px; height: 18px; }
+#v-projet { padding-inline: clamp(0px, 3.4vw, 52px); }
+.op-item { display: grid; gap: 10px; min-width: 0; }
+.op-cap { font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.op-simimg { display: block; }
+.op-simrow { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.op-simtitle { min-width: 0; font-size: 15px; font-weight: 500; line-height: 1.3; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+.op-simtitle:hover { text-decoration: underline; }
+.op-ext { flex: none; color: var(--muted); padding: 2px; }
+.op-ext:hover { color: var(--blue); }
+.op-ext svg { display: block; width: 16px; height: 16px; }
+.op-sim .op-simtags { font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.op-more { justify-self: center; margin-top: 12px; }
+.op-cats { display: grid; gap: 32px; margin-top: 104px; padding-top: 48px; border-top: 1px solid var(--rule); }
+.op-catgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.op-cat { display: grid; gap: 12px; justify-items: center; padding: 28px 18px 22px; background: var(--wash); border: 1px solid var(--rule); border-radius: 12px; color: var(--ink); font: 500 18px/1.2 var(--body); }
+.op-cat:hover { border-color: var(--blue); }
+.op-cat:hover .op-stack img { transform: translateY(-4px) rotate(var(--tilt, 0deg)); }
+.op-cat small { font: 400 12px/1.3 var(--mono); color: var(--muted); }
+.op-stack { position: relative; width: 100%; max-width: 230px; height: 124px; }
+.op-stack img { position: absolute; top: 12px; width: 56%; height: 96px; object-fit: contain; background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; box-shadow: var(--shadow); transform: rotate(var(--tilt, 0deg)); transition: transform .3s cubic-bezier(.16, 1, .3, 1); }
+.op-stack img:nth-child(1) { left: 0; --tilt: -6deg; }
+.op-stack img:nth-child(2) { left: 22%; top: 0; z-index: 2; }
+.op-stack img:nth-child(3) { right: 0; --tilt: 6deg; }
+@media (prefers-reduced-motion: reduce) { .op-stack img { transition: none; } }
 .results { list-style: none; margin: 0; padding: 0; }
 .results li { border-bottom: 1px solid var(--rule); }
 .results a { display: grid; grid-template-columns: minmax(0, 1fr) 190px 130px 44px; gap: 16px; align-items: baseline; padding: 10px 6px; text-decoration: none; }
@@ -228,6 +257,9 @@ dialog[open] { animation: slide .32s cubic-bezier(.16, 1, .3, 1); }
   .op-side { position: static; }
   .op-simgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .op-main { gap: 44px; }
+  .op-nav { top: auto; bottom: max(16px, env(safe-area-inset-bottom, 0px)); margin-top: 0; }
+  #v-projet { padding-inline: 0; padding-bottom: 80px; }
+  .op-catgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .results a, .results.withthumbs a { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
   .rthumb { display: none; }
   .rt { grid-column: 1 / -1; }
@@ -708,18 +740,85 @@ function renderColors(box, colors) {
 }
 
 function simCard(o) {
-  const a = link(o.link, "op-sim");
-  const fig = el("figure", "op-card");
-  const img = el("img"); img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
-  img.addEventListener("error", () => a.remove());
-  img.src = o.img;
-  fig.append(img);
-  a.append(fig, el("b", "", splitBy(o.title || sourceName(o.source))[0]), el("span", "", sourceName(o.source)));
-  a.addEventListener("click", ev => {
+  const box = el("article", "op-sim");
+  const open = ev => {
     if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button) return;
     ev.preventDefault(); openProject(o);
-  });
-  return a;
+  };
+  const shot = link(o.link, "op-simimg");
+  const fig = el("figure", "op-card");
+  const img = el("img"); img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
+  img.addEventListener("error", () => box.remove());
+  img.src = o.img;
+  fig.append(img);
+  shot.append(fig);
+  shot.addEventListener("click", open);
+  const row = el("div", "op-simrow");
+  const name = link(o.link, "op-simtitle", splitBy(o.title || sourceName(o.source))[0]);
+  name.addEventListener("click", open);
+  const ext = link(o.link, "op-ext");
+  ext.innerHTML = ARROW_OUT;
+  ext.title = "Ouvrir sur " + sourceName(o.source);
+  ext.setAttribute("aria-label", ext.title);
+  row.append(name, ext);
+  box.append(shot, row, el("span", "op-simtags", [sourceName(o.source), ...formatsOf(o).map(f => f[1]).slice(0, 3)].join(" · ")));
+  return box;
+}
+
+function shotItem(m, n, isWeb) {
+  const wrap = el("div", "op-item");
+  const fig = card(m.u, "", false, false, m.video);
+  fig.addEventListener("error", () => wrap.remove(), true);
+  wrap.append(fig, el("span", "op-cap", (m.video ? "Vidéo " : isWeb ? "Section " : "Image ") + String(n).padStart(2, "0")));
+  return wrap;
+}
+
+// Previous and next follow the wall as it is filtered, so the arrows walk through what you were browsing.
+function neighbours(e) {
+  let list = galleryRows(state.fmt);
+  if (!list.includes(e)) list = gallery.entries;
+  const n = list.indexOf(e);
+  return n < 0 ? [null, null] : [list[n - 1] || null, list[n + 1] || null];
+}
+
+function navArrows(e) {
+  const [prev, next] = neighbours(e);
+  return [[prev, "prev", "Projet précédent", "M15 5l-7 7 7 7"], [next, "next", "Projet suivant", "M9 5l7 7-7 7"]]
+    .filter(x => x[0])
+    .map(([o, cls, label, d]) => {
+      const b = el("button", "op-nav " + cls); b.type = "button"; b.title = label;
+      b.setAttribute("aria-label", label);
+      b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="' + d + '"/></svg>';
+      b.addEventListener("click", () => openProject(o));
+      return b;
+    });
+}
+
+function categoriesBlock() {
+  const cats = FORMATS.slice(1).map(f => [f, galleryRows(f[0])]).filter(([, rows]) => rows.length >= 3);
+  if (!cats.length) return null;
+  const sec = el("section", "op-cats");
+  const grid = el("div", "op-catgrid");
+  for (const [f, rows] of cats) {
+    const b = el("button", "op-cat"); b.type = "button";
+    const stack = el("div", "op-stack");
+    const seen = new Set();
+    for (const r of rows) {
+      const key = r.item || r.img;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const img = el("img"); img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
+      img.addEventListener("error", () => img.remove());
+      img.src = r.img;
+      stack.append(img);
+      if (seen.size === 3) break;
+    }
+    b.append(stack, el("span", "", f[1]), el("small", "", fmtN(rows.length) + " images"));
+    b.addEventListener("click", () => { state.fmt = f[0]; state.q = ""; $("q").value = ""; gallery.shown = 40; gallery.returning = false; closeProject("galerie"); });
+    grid.append(b);
+  }
+  sec.append(el("h2", "op-h2", "Explorer par catégorie"), grid);
+  return sec;
 }
 
 const ANIMATED = /\.(gif|apng)(\?|$)/i;
@@ -823,7 +922,7 @@ function renderProject() {
   if (media.length > 1) {
     const sec = el("section", "op-sections");
     const grid = el("div", "op-grid");
-    media.slice(1).forEach(m => grid.append(card(m.u, "", false, false, m.video)));
+    media.slice(1).forEach((m, k) => grid.append(shotItem(m, k + 2, isWeb)));
     sec.append(el("h2", "op-h2", (isWeb ? "Sections de cette page" : "Toutes les images du projet") + " · " + fmtN(media.length)), grid);
     main.append(sec);
   }
@@ -836,9 +935,15 @@ function renderProject() {
     const sec = el("section", "op-similar");
     const grid = el("div", "op-simgrid");
     sims.forEach(o => grid.append(simCard(o)));
-    sec.append(el("h2", "op-h2", "Projets similaires"), grid);
+    const all = el("button", "op-cta op-more", "Voir toute la galerie"); all.type = "button";
+    all.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>');
+    all.addEventListener("click", () => closeProject("galerie"));
+    sec.append(el("h2", "op-h2", "Projets similaires"), grid, all);
     parts.push(sec);
   }
+  const cats = categoriesBlock();
+  if (cats) parts.push(cats);
+  parts.push(...navArrows(e));
   box.replaceChildren(...parts);
 }
 
@@ -1146,6 +1251,11 @@ addEventListener("popstate", () => {
   } else closeProject(VIEWS.some(v => v[0] === h) ? h : VIEWS[0][0]);
 });
 addEventListener("keydown", e => {
+  const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
+  if (state.view === "projet" && !typing && !$("drawer").open && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+    const b = document.querySelector(".op-nav." + (e.key === "ArrowLeft" ? "prev" : "next"));
+    if (b) { e.preventDefault(); b.click(); }
+  }
   if (e.key === "/" && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName) && !$("drawer").open) { e.preventDefault(); $("q").focus(); }
 });
 $("stamp").textContent = fmtN(ROWS.length) + " références · " + totalLinks + " liens · index relevé le " + DATA.date;
