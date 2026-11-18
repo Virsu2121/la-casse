@@ -51,6 +51,10 @@ PREVIEW_HOSTS = {"www.typographicposters.com", "posterhouse.org", "bpando.org",
                  "signs.org", "madparis.fr", "www.mockupworld.co"}
 PREVIEW_TTL = 21600
 KNOWN_IMAGES = set()  # only images already listed by a feed or Are.na may be analysed
+# A size written in the file name (photo_100x100.png, cover-300x300.jpg) marks a thumbnail, not project work.
+SIZE_IN_NAME = re.compile(r"[-_](\d{2,4})x(\d{2,4})(?=[._?]|$)")
+SMALL_SIDE = 320
+REPEATED_IN = 3  # an image found in this many articles of one site is site decoration (badge, banner, logo)
 VIDEO_FILE = re.compile(r"\.(mp4|webm|mov)(\?|$)", re.I)
 JUNK_IMAGE = re.compile(r"gravatar|avatar|emoji|wp-includes|spacer|pixel|/icons?/|favicon", re.I)
 CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
@@ -92,7 +96,7 @@ class Sanitizer(html.parser.HTMLParser):
             src = safe_url(a.get("data-src") or a.get("src"), self.base)
             if not src or a.get("width") in ("0", "1") or a.get("height") in ("0", "1"):
                 return
-            if not JUNK_IMAGE.search(src) and src not in self.images:
+            if not JUNK_IMAGE.search(src) and not small_image(src, a) and src not in self.images:
                 self.images.append(src)
             self.out.append(f'<img src="{html.escape(src)}" alt="{html.escape(a.get("alt") or "")}" loading="lazy" referrerpolicy="no-referrer">')
         else:
@@ -125,6 +129,29 @@ class Sanitizer(html.parser.HTMLParser):
         while self.stack:
             self.out.append(f"</{self.stack.pop()}>")
         return "".join(self.out), re.sub(r"\s+", " ", "".join(self.text)).strip(), self.images
+
+
+def small_image(src, attrs=None):
+    """True for thumbnails: by declared width/height, or by a size written in the file name."""
+    for key in ("width", "height"):
+        value = (attrs or {}).get(key) or ""
+        if value.isdigit() and int(value) < 120:
+            return True
+    m = SIZE_IN_NAME.search(urllib.parse.urlparse(src).path)
+    return bool(m and int(m.group(1)) <= SMALL_SIDE and int(m.group(2)) <= SMALL_SIDE)
+
+
+def drop_site_decoration(items):
+    """Removes images that one site repeats across several of its articles."""
+    per_site = {}
+    for i in items:
+        for u in set(i["images"]):
+            per_site.setdefault(i["source"], {}).setdefault(u, 0)
+            per_site[i["source"]][u] += 1
+    for i in items:
+        counts = per_site.get(i["source"], {})
+        i["images"] = [u for u in i["images"] if counts.get(u, 0) < REPEATED_IN]
+        i["image"] = i["images"][0] if i["images"] else ""
 
 
 def fetch(url):
@@ -190,7 +217,7 @@ def parse_feed(source, raw):
         san = Sanitizer(link)
         san.feed(body)
         content, text, images = san.result()
-        extra = [u for u in (safe_url(a, link) for a in attached) if u and u not in images and not JUNK_IMAGE.search(u)]
+        extra = [u for u in (safe_url(a, link) for a in attached) if u and u not in images and not JUNK_IMAGE.search(u) and not small_image(u)]
         images = extra + images
         title = Sanitizer(link)
         title.feed(f.get("title", ""))
@@ -239,6 +266,7 @@ def build_feeds():
     with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
         results = list(pool.map(lambda kv: read_feed(*kv), FEEDS.items()))
     items = [i for _, rows, _ in results for i in rows]
+    drop_site_decoration(items)
     KNOWN_IMAGES.update(u for i in items for u in i["images"])
     items.sort(key=lambda i: i["date"], reverse=True)
     return {
