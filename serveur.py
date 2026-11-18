@@ -28,7 +28,6 @@ FEEDS = {
     "posterhouse": "https://posterhouse.org/feed/",
     "standardsmanual": "https://standardsmanual.com/blogs/news.atom",
     "artstation": "https://www.artstation.com/artwork.rss",
-    "onepagelove": "https://onepagelove.com/feed",
     "dezeen": "https://www.dezeen.com/feed/",
     "archdaily": "https://www.archdaily.com/feed",
     "printmag": "https://www.printmag.com/feed/",
@@ -292,18 +291,18 @@ def build_arena(query):
 
 def build_arena_images(query):
     """Public image blocks from the first few Are.na channels matching the query."""
-    url = "https://api.are.na/v2/search/channels?" + urllib.parse.urlencode({"q": query, "per": 8})
-    channels = [c for c in json.loads(fetch(url)).get("channels", []) if c.get("status") != "private" and (c.get("length") or 0) >= 6][:3]
+    url = "https://api.are.na/v2/search/channels?" + urllib.parse.urlencode({"q": query, "per": 12})
+    channels = [c for c in json.loads(fetch(url)).get("channels", []) if c.get("status") != "private" and (c.get("length") or 0) >= 6][:6]
     rows = []
     for c in channels:
         time.sleep(0.3)
         try:
-            data = json.loads(fetch(f"https://api.are.na/v2/channels/{urllib.parse.quote(c['slug'])}/contents?per=30"))
+            data = json.loads(fetch(f"https://api.are.na/v2/channels/{urllib.parse.quote(c['slug'])}/contents?per=50"))
         except Exception:
             continue
         for b in data.get("contents", []):
             src = (((b.get("image") or {}).get("display") or {}).get("url")) or ""
-            if b.get("class") == "Image" and b.get("id") and safe_url(src, ""):
+            if b.get("class") in ("Image", "Link") and b.get("id") and safe_url(src, ""):
                 KNOWN_IMAGES.add(src)
                 rows.append({"image": src, "title": b.get("title") or c.get("title") or "", "channel": c.get("title") or "",
                              "author": (b.get("user") or {}).get("username") or b.get("connected_by_username") or "",
