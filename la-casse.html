@@ -182,9 +182,12 @@ main { padding-block: 22px 72px; }
 @media (prefers-reduced-motion: reduce) { .op-stack img { transition: none; } }
 #filters { position: relative; z-index: 4; }
 .chipwrap { display: inline-flex; }
-.webmenu { display: none; position: absolute; top: calc(100% - 2px); left: max(20px, env(safe-area-inset-left, 0px)); right: max(20px, env(safe-area-inset-right, 0px)); max-width: 1120px; z-index: 8; gap: 22px; padding: 26px 30px 22px; background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; box-shadow: var(--shadow); }
+.webmenu { display: grid; visibility: hidden; opacity: 0; transform: translateY(6px); transition: opacity .18s ease, transform .18s ease, visibility 0s linear .45s; position: absolute; top: calc(100% - 2px); left: max(20px, env(safe-area-inset-left, 0px)); right: max(20px, env(safe-area-inset-right, 0px)); max-width: 1120px; z-index: 8; gap: 22px; padding: 26px 30px 22px; background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; box-shadow: var(--shadow); }
 .webmenu::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px; }
-.chipwrap:hover .webmenu, .chipwrap:focus-within .webmenu { display: grid; }
+.chipwrap:hover .webmenu, .chipwrap:focus-within .webmenu { visibility: visible; opacity: 1; transform: none; transition-delay: .45s, .45s, 0s; transition-duration: .18s, .18s, 0s; }
+.chipwrap:hover .webmenu { transition-delay: 0s; }
+.chipwrap.shut .webmenu { visibility: hidden; opacity: 0; transition: none; }
+@media (prefers-reduced-motion: reduce) { .webmenu { transform: none; } }
 .webcols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 30px; }
 .webcol ul { list-style: none; margin: 10px 0 0; padding: 0; columns: 2; column-gap: 20px; }
 .webcol li { display: flex; align-items: center; justify-content: space-between; gap: 6px; break-inside: avoid; padding: 2px 0; }
@@ -1019,7 +1022,7 @@ function webMenu() {
       if (state.fmt === "web" && state.sub === query) b.setAttribute("aria-current", "true");
       b.addEventListener("click", ev => {
         ev.stopPropagation();
-        state.fmt = "web"; state.sub = query; state.subLabel = label;
+        state.fmt = "web"; state.sub = query; state.subLabel = label; state.menuShut = true;
         state.shown = 60; reader.shown = 24; gallery.shown = 40;
         document.activeElement.blur();
         if (state.view !== "galerie" && VIEWS.some(v => v[0] === "galerie")) setView("galerie"); else render();
@@ -1042,16 +1045,26 @@ function webMenu() {
 }
 
 function renderChips() {
-  const counter = state.view === "galerie" ? (gallery.ready ? galleryRows : null) : state.view === "articles" ? (reader.loaded ? feedRows : null) : state.view === "index" ? indexRows : null;
   $("chips").replaceChildren(...FORMATS.map(f => {
     const b = el("button", "chip", f[1]); b.type = "button";
     b.setAttribute("aria-pressed", String(state.fmt === f[0]));
-    if (counter) b.append(el("small", "", fmtN(counter(f[0]).length)));
     b.addEventListener("click", () => { state.fmt = f[0]; state.sub = ""; state.shown = 60; reader.shown = 24; gallery.shown = 40; render(); });
     if (f[0] !== "web" || !LIVE) return b;
     if (state.fmt === "web" && state.sub) b.firstChild.textContent = "Sites web · " + state.subLabel;
-    const wrap = el("div", "chipwrap");
-    wrap.append(b, webMenu());
+    const wrap = el("div", state.menuShut ? "chipwrap shut" : "chipwrap");
+    wrap.addEventListener("mouseleave", () => { state.menuShut = false; wrap.classList.remove("shut"); });
+    const panel = webMenu();
+    // On wide screens the panel opens under the button, so the pointer never crosses empty space to reach it.
+    const place = () => {
+      if (innerWidth <= 860) { panel.style.left = panel.style.right = panel.style.width = ""; return; }
+      const box = $("filters").getBoundingClientRect(), chip = b.getBoundingClientRect();
+      const width = Math.min(1120, box.width - 40);
+      const left = Math.max(20, Math.min(chip.right - box.left - width, box.width - 20 - width));
+      panel.style.width = width + "px"; panel.style.left = left + "px"; panel.style.right = "auto";
+    };
+    wrap.addEventListener("mouseenter", () => { state.menuShut = false; wrap.classList.remove("shut"); place(); });
+    wrap.addEventListener("focusin", place);
+    wrap.append(b, panel);
     return wrap;
   }));
   $("src").hidden = state.view === "collections";
