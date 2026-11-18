@@ -25,6 +25,7 @@ def short(text):
 
 
 def main(out_path):
+    serveur.ARENA_MAX_PAUSE = 420  # nobody waits on the daily build, so it sits out Are.na's pauses
     feeds = serveur.build_feeds()
     print("flux", feeds["ok"], "/", feeds["total"], feeds["failed"], flush=True)
     if feeds["ok"] < MIN_FEEDS:
@@ -41,11 +42,18 @@ def main(out_path):
     arena = {}
     terms = list(dict.fromkeys(ARENA_TERMS + menu_terms()))
     print("recherches Are.na", len(terms), flush=True)
-    for term in terms:
-        try:
-            arena[term] = serveur.build_arena_images(term)["items"]
-        except Exception as e:
-            print("Are.na", term, type(e).__name__, flush=True)
+    for attempt in (1, 2):
+        missing = [t for t in terms if t not in arena]
+        if not missing:
+            break
+        if attempt == 2:
+            print("seconde passe Are.na", len(missing), flush=True)
+            time.sleep(60)
+        for term in missing:
+            try:
+                arena[term] = serveur.build_arena_images(term)["items"]
+            except Exception as e:
+                print("Are.na", term, type(e).__name__, getattr(e, "code", ""), flush=True)
 
     start = time.time()
     targets = [(i, i["images"][0]) for i in items] + [(r, r["image"]) for rows in arena.values() for r in rows]

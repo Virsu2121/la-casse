@@ -291,6 +291,7 @@ def build_arena(query):
 
 arena_lock, arena_last = threading.Lock(), [0.0]
 ARENA_GAP = 1.1  # seconds between two Are.na calls; bursts get the address blocked for several minutes
+ARENA_MAX_PAUSE = 90  # longest pause asked by Are.na that is worth waiting for; the daily build raises it
 
 
 def arena_fetch(url):
@@ -305,7 +306,7 @@ def arena_fetch(url):
                 return fetch(url)
             except urllib.error.HTTPError as e:
                 pause = int(e.headers.get("Retry-After") or 0) if e.code == 429 else 0
-                if attempt == 2 or not 0 < pause <= 90:
+                if attempt == 2 or not 0 < pause <= ARENA_MAX_PAUSE:
                     raise
                 time.sleep(pause)
     raise RuntimeError("unreachable")
