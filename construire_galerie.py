@@ -1,6 +1,6 @@
 """Builds galerie.json for the hosted site: titles, short descriptions, links, image addresses and colours.
 No article and no image file is stored; images stay hosted by the original sites."""
-import concurrent.futures, json, sys, time
+import concurrent.futures, json, re, sys, time
 from datetime import datetime, timezone
 
 import serveur
@@ -8,6 +8,13 @@ import serveur
 ARENA_TERMS = ["poster", "logo", "typography", "ephemera", "branding", "ticket", "packaging", "lanyard", "band merch",
                "wayfinding", "album cover", "mockup", "texture", "illustration", "web design"]
 MIN_FEEDS = 5
+
+
+def menu_terms(page="la-casse.html"):
+    """Are.na queries of the Sites web menu, so its categories open instantly online."""
+    html = open(page, encoding="utf-8").read()
+    block = html[html.index("const WEB_MENU = ["):html.index("const WEB_GALLERIES")]
+    return re.findall(r'\["[^"]+", "[^"]+", "([^"]+)"\]', block)
 EXCERPT = 220
 
 
@@ -32,12 +39,13 @@ def main(out_path):
             items.append({"source": i["source"], "title": i["title"], "author": i.get("author", ""), "link": i["link"], "date": i["date"],
                           "images": images, "videos": i.get("videos", []), "image": images[0], "excerpt": short(i["excerpt"]), "html": ""})
     arena = {}
-    for term in ARENA_TERMS:
+    terms = list(dict.fromkeys(ARENA_TERMS + menu_terms()))
+    print("recherches Are.na", len(terms), flush=True)
+    for term in terms:
         try:
             arena[term] = serveur.build_arena_images(term)["items"]
         except Exception as e:
             print("Are.na", term, type(e).__name__, flush=True)
-        time.sleep(1)
 
     start = time.time()
     targets = [(i, i["images"][0]) for i in items] + [(r, r["image"]) for rows in arena.values() for r in rows]

@@ -1,7 +1,7 @@
 """La Casse: local reader. Reads publishers' own feeds and the Are.na API live.
 Nothing is written to disk; responses are kept in memory for a short time only."""
 import argparse, concurrent.futures, email.utils, html, html.parser, json, os, re, threading, time
-import urllib.parse, urllib.request, urllib.robotparser, webbrowser
+import urllib.error, urllib.parse, urllib.request, urllib.robotparser, webbrowser
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -279,7 +279,7 @@ def build_feeds():
 
 def build_arena(query):
     url = "https://api.are.na/v2/search/channels?" + urllib.parse.urlencode({"q": query, "per": 18})
-    data = json.loads(fetch(url))
+    data = json.loads(arena_fetch(url))
     rows = []
     for c in data.get("channels", []):
         user, slug = (c.get("user") or {}).get("slug"), c.get("slug")
@@ -289,15 +289,60 @@ def build_arena(query):
     return {"query": query, "items": rows}
 
 
+arena_lock, arena_last = threading.Lock(), [0.0]
+ARENA_GAP = 1.1  # seconds between two Are.na calls; bursts get the address blocked for several minutes
+
+
+def arena_fetch(url):
+    """Are.na API call, spaced out, retried once when Are.na asks for a short pause."""
+    for attempt in (1, 2):
+        with arena_lock:
+            wait = arena_last[0] + ARENA_GAP - time.time()
+            if wait > 0:
+                time.sleep(wait)
+            arena_last[0] = time.time()
+            try:
+                return fetch(url)
+            except urllib.error.HTTPError as e:
+                pause = int(e.headers.get("Retry-After") or 0) if e.code == 429 else 0
+                if attempt == 2 or not 0 < pause <= 90:
+                    raise
+                time.sleep(pause)
+    raise RuntimeError("unreachable")
+
+
+def arena_channels(query):
+    """Public channels for a query. After "#", keywords one of which must appear in the channel title."""
+    spec, _, keys = query.partition("#")
+    phrasings = [q.strip() for q in spec.split("|") if q.strip()]
+    keywords = [k.strip().lower() for k in keys.split(",") if k.strip()]
+    found, seen = [], set()
+    for n, phrase in enumerate(phrasings):
+        url = "https://api.are.na/v2/search/channels?" + urllib.parse.urlencode({"q": phrase, "per": 12})
+        try:
+            results = json.loads(arena_fetch(url)).get("channels", [])
+        except Exception:  # a refused or failed phrasing keeps what the others found
+            if found:
+                break
+            raise
+        for c in results:
+            title = (c.get("title") or "").lower()
+            if c.get("id") in seen or c.get("status") == "private" or (c.get("length") or 0) < 6:
+                continue
+            if keywords and not any(k in title for k in keywords):
+                continue
+            seen.add(c.get("id"))
+            found.append(c)
+    return found[:6]
+
+
 def build_arena_images(query):
     """Public image blocks from the first few Are.na channels matching the query."""
-    url = "https://api.are.na/v2/search/channels?" + urllib.parse.urlencode({"q": query, "per": 12})
-    channels = [c for c in json.loads(fetch(url)).get("channels", []) if c.get("status") != "private" and (c.get("length") or 0) >= 6][:6]
+    channels = arena_channels(query)
     rows = []
     for c in channels:
-        time.sleep(0.3)
         try:
-            data = json.loads(fetch(f"https://api.are.na/v2/channels/{urllib.parse.quote(c['slug'])}/contents?per=50"))
+            data = json.loads(arena_fetch(f"https://api.are.na/v2/channels/{urllib.parse.quote(c['slug'])}/contents?per=50"))
         except Exception:
             continue
         for b in data.get("contents", []):

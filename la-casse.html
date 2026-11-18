@@ -517,8 +517,21 @@ async function arenaJson(path) {
 
 // Same selection as serveur.py, for the hosted site where there is no server.
 async function arenaImagesDirect(term) {
-  const found = await arenaJson("search/channels?per=12&q=" + encodeURIComponent(term));
-  const channels = found.channels.filter(c => c.status !== "private" && c.length >= 6).slice(0, 6);
+  const [spec, keys = ""] = term.split("#");
+  const keywords = keys.split(",").map(k => k.trim().toLowerCase()).filter(Boolean);
+  const channels = [], seen = new Set();
+  for (const phrase of spec.split("|").map(p => p.trim()).filter(Boolean)) {
+    let found;
+    try { found = await arenaJson("search/channels?per=12&q=" + encodeURIComponent(phrase)); }
+    catch (err) { if (channels.length) break; throw err; }
+    for (const c of found.channels) {
+      const title = (c.title || "").toLowerCase();
+      if (seen.has(c.id) || c.status === "private" || c.length < 6) continue;
+      if (keywords.length && !keywords.some(k => title.includes(k))) continue;
+      seen.add(c.id); channels.push(c);
+    }
+  }
+  channels.splice(6);
   const rows = [];
   for (const c of channels) {
     const data = await arenaJson("channels/" + encodeURIComponent(c.slug) + "/contents?per=50");
@@ -1003,10 +1016,19 @@ const WEB_MENU = [
     ["3D", "3d", "3d website"], ["Brutalisme", "brutalism", "brutalist website"], ["Rétro", "retro-vintage", "retro website"], ["Éditorial", "editorial", "editorial web design"],
     ["Dégradés", "gradients", "gradient website"], ["Glitch", "glitch", "glitch website"], ["Luxe", "luxury", "luxury website"], ["Illustré", "illustrative", "illustrated website"],
     ["Pixel art", "pixel-art", "pixel art website"], ["Défilement horizontal", "horizontal-layout", "horizontal scroll website"], ["Grille", "grid-layout", "grid layout website"]]],
-  ["Section", "section", [["Hero", "hero-banner", "website hero"], ["Navigation", "header-navigation", "website navigation"], ["Fonctionnalités", "features", "features section"],
-    ["Grille bento", "bento-grid", "bento grid"], ["Tarifs", "pricing", "pricing page"], ["Témoignages", "testimonials", "testimonials section"], ["FAQ", "faq", "faq design"],
-    ["Logos clients", "client-logos", "client logos"], ["Formulaire de contact", "contact-form", "contact form design"], ["Démo produit", "looping-product-demo", "product demo animation"],
-    ["À propos", "about", "about page design"], ["Footer", "footer", "website footer"]]],
+  // Sections need the section's own word in the collection title, otherwise Are.na returns unrelated boards.
+  ["Section", "section", [["Hero", "hero-banner", "website hero|hero section|hero#hero"],
+    ["Navigation", "header-navigation", "website navigation|navigation|menu design#nav,menu"],
+    ["Fonctionnalités", "features", "features section|feature section|website features|features|feature grid#feature"],
+    ["Grille bento", "bento-grid", "bento grid|bento|bento ui#bento"],
+    ["Tarifs", "pricing", "pricing page|pricing|pricing table#pricing,price"],
+    ["Témoignages", "testimonials", "testimonials|testimonial|reviews ui#testimonial,review"],
+    ["FAQ", "faq", "faq|faq design|accordion ui#faq,accordion"],
+    ["Logos clients", "client-logos", "client logos|logo wall|logo grid#client logo,logo wall,logo grid,logos"],
+    ["Formulaire de contact", "contact-form", "contact form|form design|web forms#form"],
+    ["Démo produit", "looping-product-demo", "product demo|ui animation|motion ui|interaction design#demo,animation,motion,interaction"],
+    ["À propos", "about", "about page|about us page|about section#about"],
+    ["Footer", "footer", "website footer|footer|footers#footer"]]],
 ];
 const WEB_GALLERIES = [["One Page Love", "https://onepagelove.com/"], ["Awwwards", "https://www.awwwards.com/websites/"], ["SiteInspire", "https://www.siteinspire.com/"], ["Brutalist Websites", "https://brutalistwebsites.com/"]];
 
