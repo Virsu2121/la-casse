@@ -53,7 +53,7 @@ PREVIEW_TTL = 21600
 KNOWN_IMAGES = set()  # only images already listed by a feed or Are.na may be analysed
 JUNK_IMAGE = re.compile(r"gravatar|avatar|emoji|wp-includes|spacer|pixel|/icons?/|favicon", re.I)
 CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-       "font-src https://fonts.gstatic.com; img-src http: https:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'")
+       "font-src https://fonts.gstatic.com; img-src http: https: data:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'")
 
 ALLOWED = {"p", "a", "img", "h2", "h3", "h4", "ul", "ol", "li", "blockquote", "em", "strong", "i", "b", "br", "figure", "figcaption"}
 VOID = {"img", "br"}

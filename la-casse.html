@@ -101,42 +101,60 @@ main { padding-block: 22px 72px; }
 .rthumb { width: 56px; height: 44px; display: block; }
 .rthumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .results.withthumbs a { grid-template-columns: 56px minmax(0, 1fr) 190px 130px 44px; align-items: center; }
-.back { display: inline-flex; align-items: center; gap: 6px; justify-self: start; background: none; border: 0; padding: 4px 0; font-weight: 600; font-size: 14px; }
-.back:hover { color: var(--blue); }
-.back svg { width: 18px; height: 18px; }
-.proj { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 48px; align-items: start; }
-.pinfo { position: sticky; top: 118px; display: grid; gap: 20px; min-width: 0; }
-.pinfo h1 { margin: 0; font: 900 clamp(40px, 5vw, 64px)/.95 var(--display); text-wrap: balance; overflow-wrap: anywhere; }
-.by { margin: -8px 0 0; font-size: 15px; color: var(--muted); }
-.by b { color: var(--ink); font-weight: 600; }
-.pdesc { margin: 0; font-size: 18px; line-height: 1.55; max-width: 52ch; }
-.pacts { display: flex; flex-wrap: wrap; gap: 10px; }
-.cta { display: inline-block; background: var(--blue); color: var(--on-blue); border: 0; padding: 12px 18px; font-weight: 600; font-size: 14px; text-decoration: none; }
-.cta:hover { background: var(--strong); color: var(--paper); }
-.cta.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--strong); }
-.cta.ghost:hover { background: var(--strong); color: var(--paper); }
-.specs { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 14px 16px; margin: 0; padding-top: 20px; border-top: 1px solid var(--rule); }
-.specs dt, .speclabel { font: 400 12px/1.6 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-.specs dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-.specs dd a { color: var(--blue); }
-.swatches { display: flex; flex-wrap: wrap; gap: 10px; }
-.sw { display: grid; gap: 3px; background: none; border: 0; padding: 0; text-align: left; font-size: 13px; }
-.sw i { display: block; width: 46px; height: 46px; border: 1px solid var(--rule); }
-.sw small { font: 400 11px/1.3 var(--mono); color: var(--muted); }
-.sw:hover span { color: var(--blue); }
-.muted { color: var(--muted); font-size: 14px; }
-.ptagswrap { display: grid; gap: 8px; }
-.ptags { display: flex; flex-wrap: wrap; gap: 8px; }
-.tag { background: none; border: 1px solid var(--strong); border-radius: 999px; padding: 6px 14px; font-size: 14px; }
-.tag:hover { background: var(--strong); color: var(--paper); }
-.pfoot { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); padding-top: 4px; }
-.pfoot a { color: var(--muted); }
-.pmedia { display: grid; gap: 22px; min-width: 0; }
-.pmedia figure { margin: 0; background: var(--wash); }
-.pmedia img { display: block; width: 100%; height: auto; }
-.webframe { max-height: 82vh; overflow-y: auto; border: 1px solid var(--rule); }
-.hint { margin: 0 0 -10px; font-size: 13px; color: var(--muted); }
-.similar { display: grid; gap: 20px; margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--strong); }
+/* Project page: a warm paper sheet, as on gallery detail pages, whatever the site theme. */
+:root:root.op-light {
+  --paper: #f2f0ec; --ink: #1f1d1a; --muted: #6e6962; --rule: #dcd7cf; --strong: #1f1d1a;
+  --blue: #b9433b; --pink: #b9433b; --wash: #e8e4de; --on-blue: #ffffff; --veil: rgba(31, 29, 26, .4); color-scheme: light;
+}
+:root.op-light body { background: var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.18 0 0 0 0 0.15 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.op { display: grid; grid-template-columns: minmax(0, 29fr) minmax(0, 59fr); gap: 64px; align-items: start; padding-top: 22px; }
+.op-side { position: sticky; top: 112px; display: grid; gap: 26px; min-width: 0; }
+.op-back { justify-self: start; display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; font: 400 13px/1.4 var(--mono); color: var(--muted); }
+.op-back:hover { color: var(--ink); }
+.op-back svg { width: 14px; height: 14px; }
+.op-title { margin: 0; font: 500 clamp(36px, 3.4vw, 54px)/1.06 var(--body); letter-spacing: -.02em; text-wrap: balance; overflow-wrap: anywhere; }
+.op-by { display: grid; gap: 8px; margin-top: -6px; }
+.op-label { font: 400 14px/1.3 var(--mono); color: var(--muted); }
+.op-author { display: flex; align-items: center; gap: 9px; font-size: 19px; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.op-avatar { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--wash); color: var(--ink); border: 1px solid var(--rule); font: 600 10px/1 var(--body); }
+.op-desc { margin: 0; font-size: 21px; line-height: 1.75; color: color-mix(in srgb, var(--ink) 82%, var(--paper)); }
+.op-acts { display: flex; flex-wrap: wrap; gap: 10px; }
+.op-cta { display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: var(--on-blue); border: 0; border-radius: 999px; padding: 15px 24px; font: 600 15px/1 var(--body); letter-spacing: .03em; text-transform: uppercase; text-decoration: none; }
+.op-cta:hover { background: #9e352e; }
+.op-cta svg { width: 14px; height: 14px; }
+.op-cta.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
+.op-cta.ghost:hover { box-shadow: inset 0 0 0 1px var(--ink); }
+.op-specs { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 22px 18px; margin: 0; padding-top: 30px; border-top: 1px solid var(--rule); }
+.op-specs dt { font: 400 14px/1.35 var(--mono); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding-top: 3px; }
+.op-specs dd { margin: 0; font-size: 19px; line-height: 1.35; min-width: 0; overflow-wrap: anywhere; }
+.op-specs dd a { color: inherit; text-decoration-color: var(--rule); }
+.op-specs dd a:hover { text-decoration-color: var(--ink); }
+.op-colors { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.op-color { display: inline-flex; align-items: center; gap: 7px; background: none; border: 0; padding: 0; font-size: 18px; }
+.op-color i { display: block; width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); }
+.op-color small { font: 400 12px/1 var(--mono); color: var(--muted); }
+.op-color:hover span { text-decoration: underline; }
+.op-tags { display: grid; gap: 14px; }
+.op-tagrow { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+.op-tag { flex: none; background: transparent; border: 1px solid var(--rule); border-radius: 999px; padding: 8px 15px; font-size: 18px; color: var(--muted); }
+.op-tag:hover { color: var(--ink); border-color: var(--ink); }
+.op-foot { display: flex; flex-wrap: wrap; gap: 6px 26px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 16px; color: var(--muted); }
+.op-foot a { color: inherit; text-decoration: none; }
+.op-foot a:hover { color: var(--ink); text-decoration: underline; }
+.op-main { display: grid; gap: 44px; min-width: 0; }
+.op-card { margin: 0; background: #ffffff; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: 0 8px 28px rgba(31, 29, 26, .08); }
+.op-card img { display: block; width: 100%; height: auto; }
+.op-card.scroll { max-height: 82vh; overflow-y: auto; }
+.op-hint { margin: 0 0 -30px; font: 400 13px/1.4 var(--mono); color: var(--muted); }
+.op-h2 { margin: 0; font: 500 34px/1.15 var(--body); letter-spacing: -.015em; }
+.op-sections { display: grid; gap: 24px; }
+.op-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.op-similar { display: grid; gap: 26px; margin-top: 80px; padding-top: 44px; border-top: 1px solid var(--rule); }
+.op-simgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 24px; align-items: start; }
+.op-sim { display: grid; gap: 12px; color: inherit; text-decoration: none; min-width: 0; }
+.op-sim b { font-size: 18px; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; }
+.op-sim span { font-size: 14px; color: var(--muted); }
+.op-sim:hover b { text-decoration: underline; }
 .results { list-style: none; margin: 0; padding: 0; }
 .results li { border-bottom: 1px solid var(--rule); }
 .results a { display: grid; grid-template-columns: minmax(0, 1fr) 190px 130px 44px; gap: 16px; align-items: baseline; padding: 10px 6px; text-decoration: none; }
@@ -210,8 +228,9 @@ dialog[open] { animation: slide .32s cubic-bezier(.16, 1, .3, 1); }
   .site { grid-template-columns: minmax(0, 1fr); }
   .arenalist { grid-template-columns: minmax(0, 1fr); }
   .links { grid-template-columns: minmax(0, 1fr); }
-  .proj { grid-template-columns: minmax(0, 1fr); gap: 28px; }
-  .pinfo { position: static; }
+  .op { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .op-side { position: static; }
+  .op-simgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .results a, .results.withthumbs a { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
   .rthumb { display: none; }
   .rt { grid-column: 1 / -1; }
@@ -224,6 +243,9 @@ dialog[open] { animation: slide .32s cubic-bezier(.16, 1, .3, 1); }
   .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; width: 100%; }
   .chip { flex: none; }
   .filters select { width: 100%; }
+  .op-grid, .op-simgrid { grid-template-columns: minmax(0, 1fr); }
+  .op-specs { grid-template-columns: 96px minmax(0, 1fr); }
+  .op-desc { font-size: 18px; }
 }
 @media (prefers-reduced-motion: reduce) { dialog[open] { animation: none; } }
 </style>
@@ -585,7 +607,7 @@ const projectId = e => {
 };
 const findProject = id => gallery.entries.find(e => projectId(e) === id);
 const formatsOf = e => FORMATS.slice(1).filter(f => (srcById[e.source] && srcById[e.source].formats.includes(f[0])) || f[2].test(e.ntitle) || (e.term && FORMAT_TERMS[f[0]] === e.term));
-const splitBy = t => { const m = /^(.*\S)\s+by\s+([^,]{2,60})$/i.exec(t); return m ? [m[1], m[2]] : [t, ""]; };
+const splitBy = t => { t = t.replace(/^Website Inspiration:\s*/i, ""); const m = /^(.*\S)\s+by\s+([^,]{2,60})$/i.exec(t); return m ? [m[1], m[2]] : [t, ""]; };
 const titleWords = e => new Set(e.ntitle.split(/[^a-z0-9]+/).filter(w => w.length > 3 && !STOP.has(w)));
 const rgbOf = hex => [1, 3, 5].map(n => parseInt(hex.slice(n, n + 2), 16));
 const colorGap = (a, b) => { const x = rgbOf(a), y = rgbOf(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
@@ -671,13 +693,16 @@ function specRow(dl, label, value) {
   return [dt, dd];
 }
 
+const ARROW_OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
+const initials = name => name.split(/[\s\-_.]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || "?";
+
 function renderColors(box, colors) {
   box.replaceChildren(...colors.map(c => {
     const hex = c.hex.toUpperCase();
-    const b = el("button", "sw"); b.type = "button"; b.title = "Copier " + hex;
-    const chip = el("i"); chip.style.background = c.hex;
+    const b = el("button", "op-color"); b.type = "button"; b.title = "Copier " + hex;
+    const dot = el("i"); dot.style.background = c.hex;
     const code = el("small", "", hex);
-    b.append(chip, el("span", "", colorName(c.hex)), code);
+    b.append(dot, el("span", "", colorName(c.hex)), code);
     b.addEventListener("click", async () => {
       try { await navigator.clipboard.writeText(hex); code.textContent = "Copié"; setTimeout(() => (code.textContent = hex), 1200); } catch (err) {}
     });
@@ -685,13 +710,37 @@ function renderColors(box, colors) {
   }));
 }
 
+function simCard(o) {
+  const a = link(o.link, "op-sim");
+  const fig = el("figure", "op-card");
+  const img = el("img"); img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
+  img.addEventListener("error", () => a.remove());
+  img.src = o.img;
+  fig.append(img);
+  a.append(fig, el("b", "", splitBy(o.title || sourceName(o.source))[0]), el("span", "", sourceName(o.source)));
+  a.addEventListener("click", ev => {
+    if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button) return;
+    ev.preventDefault(); openProject(o);
+  });
+  return a;
+}
+
+function card(url, alt, scroll, eager) {
+  const fig = el("figure", scroll ? "op-card scroll" : "op-card");
+  const img = el("img"); img.alt = alt; img.referrerPolicy = "no-referrer"; img.loading = eager ? "eager" : "lazy";
+  img.addEventListener("error", () => fig.remove());
+  img.src = url;
+  fig.append(img);
+  return fig;
+}
+
 function renderProject() {
   const box = $("v-projet");
   const e = state.project;
-  const back = el("button", "back"); back.type = "button";
+  const back = el("button", "op-back"); back.type = "button";
   back.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
-  back.append(document.createTextNode("Retour"));
-  back.addEventListener("click", () => (history.state && history.state.casse ? history.back() : closeProject()));
+  back.append(document.createTextNode("Retour à la galerie"));
+  back.addEventListener("click", () => closeProject("galerie"));
   if (!e) {
     box.replaceChildren(back, statusEl("Ce projet n'est plus dans la galerie : elle change chaque jour avec les flux des sites.", [["Voir la galerie", () => closeProject("galerie")]]));
     return;
@@ -702,29 +751,34 @@ function renderProject() {
   const isWeb = fmts.some(f => f[0] === "web");
   const images = [e.img, ...((e.item && e.item.images) || []).filter(u => u !== e.img)];
 
-  const info = el("aside", "pinfo");
-  info.append(el("h1", "", title));
-  const by = el("p", "by");
-  by.append(document.createTextNode(author ? "Créé par " : "Publié sur "), el("b", "", author || sourceName(e.source)));
-  info.append(by);
+  const side = el("aside", "op-side");
+  side.append(back, el("h1", "op-title", title));
+  const by = el("div", "op-by");
+  const who = author || sourceName(e.source);
+  const authorLine = el("div", "op-author");
+  authorLine.append(el("span", "op-avatar", initials(who)), el("span", "", who));
+  by.append(el("span", "op-label", author ? "Créé par" : "Publié sur"), authorLine);
+  side.append(by);
   // Feeds append their own link text ("View this on ArtStation", "The post … appeared first on …").
   const desc = ((e.item && e.item.excerpt) || "").replace(/\s*View this on ArtStation.*$/i, "").replace(/\s*The post .* appeared first on .*$/i, "").trim();
-  if (desc) info.append(el("p", "pdesc", desc));
-  const acts = el("div", "pacts");
-  acts.append(link(e.link, "cta", "Voir sur " + sourceName(e.source)));
+  if (desc) side.append(el("p", "op-desc", desc));
+  const acts = el("div", "op-acts");
+  const cta = link(e.link, "op-cta", isWeb ? "Visitez le site web" : "Voir sur " + sourceName(e.source));
+  cta.insertAdjacentHTML("beforeend", ARROW_OUT);
+  acts.append(cta);
   if (LOCAL && e.item && e.item.html) {
-    const r = el("button", "cta ghost", "Lire l'article ici"); r.type = "button";
+    const r = el("button", "op-cta ghost", "Lire ici"); r.type = "button";
     r.addEventListener("click", () => openReader(e.item));
     acts.append(r);
   }
-  info.append(acts);
+  side.append(acts);
 
-  const dl = el("dl", "specs");
+  const dl = el("dl", "op-specs");
   specRow(dl, "Source", link(srcById[e.source] ? srcById[e.source].home : e.link, "", sourceName(e.source)));
   if (e.channel) specRow(dl, "Collection", e.channel);
   if (fmts.length) specRow(dl, "Catégorie", fmts.map(f => f[1]).join(", "));
-  const sw = el("div", "swatches");
-  const colourRow = specRow(dl, "Couleurs", sw);
+  const sw = el("div", "op-colors");
+  const colourRow = specRow(dl, "Couleur", sw);
   const dropColours = () => colourRow.forEach(n => n.remove());
   if (e.colors && e.colors.length) renderColors(sw, e.colors);
   else if (LOCAL) {
@@ -734,49 +788,44 @@ function renderProject() {
       if (e.colors.length) renderColors(sw, e.colors); else dropColours();
     }).catch(dropColours);
   } else dropColours();
-  if (images.length > 1) specRow(dl, "Images", fmtN(images.length));
-  info.append(dl);
+  side.append(dl);
 
   if (fmts.length) {
-    const tags = el("div", "ptags");
+    const tags = el("div", "op-tags");
+    const row = el("div", "op-tagrow");
     for (const f of fmts) {
-      const b = el("button", "tag", f[1]); b.type = "button";
+      const b = el("button", "op-tag", f[1]); b.type = "button";
       b.addEventListener("click", () => { state.fmt = f[0]; state.q = ""; $("q").value = ""; gallery.shown = 40; gallery.returning = false; closeProject("galerie"); });
-      tags.append(b);
+      row.append(b);
     }
-    const wrap = el("div", "ptagswrap");
-    wrap.append(el("span", "speclabel", "Caractéristiques"), tags);
-    info.append(wrap);
+    tags.append(el("span", "op-label", "CARACTÉRISTIQUES"), row);
+    side.append(tags);
   }
-  const foot = el("div", "pfoot");
-  if (e.item && e.item.date) foot.append(el("span", "", "Publié le " + dateFr(e.item.date)));
+  const foot = el("div", "op-foot");
+  if (e.item && e.item.date) foot.append(el("span", "", "Publié le " + new Date(e.item.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })));
   foot.append(link(ISSUES + "/new?title=" + encodeURIComponent("Signalement : " + title) + "&body=" + encodeURIComponent(e.link), "", "Signaler un problème"));
-  info.append(foot);
+  side.append(foot);
 
-  const media = el("div", "pmedia");
-  if (isWeb) media.append(el("p", "hint", "Fais défiler l'aperçu pour voir toute la page."));
-  images.forEach((u, n) => {
-    const fig = el("figure", isWeb ? "webframe" : "");
-    const img = el("img"); img.alt = n ? "" : title; img.referrerPolicy = "no-referrer"; img.loading = n < 2 ? "eager" : "lazy";
-    img.addEventListener("error", () => fig.remove());
-    img.src = u;
-    fig.append(img);
-    media.append(fig);
-  });
+  const main = el("div", "op-main");
+  if (isWeb) main.append(el("p", "op-hint", "Fais défiler l'aperçu pour voir toute la page."));
+  main.append(card(images[0], title, isWeb, true));
+  if (images.length > 1) {
+    const sec = el("section", "op-sections");
+    const grid = el("div", "op-grid");
+    images.slice(1).forEach(u => grid.append(card(u, "", false, false)));
+    sec.append(el("h2", "op-h2", isWeb ? "Sections de cette page" : "Autres images du projet"), grid);
+    main.append(sec);
+  }
 
-  const proj = el("div", "proj");
-  proj.append(info, media);
-  const parts = [back, proj];
+  const page = el("div", "op");
+  page.append(side, main);
+  const parts = [page];
   const sims = similarTo(e);
   if (sims.length) {
-    const sec = el("section", "similar");
-    sec.append(el("h2", "", "Projets similaires"));
-    const n = Math.min(4, galleryCols());
-    const cols = Array.from({ length: n }, () => el("div", "gcol"));
-    sims.forEach((o, k) => cols[k % n].append(gTileEl(o)));
-    const wall = el("div", "wall gallery");
-    wall.append(...cols);
-    sec.append(wall);
+    const sec = el("section", "op-similar");
+    const grid = el("div", "op-simgrid");
+    sims.forEach(o => grid.append(simCard(o)));
+    sec.append(el("h2", "op-h2", "Projets similaires"), grid);
     parts.push(sec);
   }
   box.replaceChildren(...parts);
@@ -1052,6 +1101,7 @@ function renderSites() {
 function render() {
   renderTabs(reader.loaded ? feedRows(state.fmt).length : 0, indexRows(state.fmt).length);
   $("filters").hidden = state.view === "sites" || state.view === "projet";
+  document.documentElement.classList.toggle("op-light", state.view === "projet");
   renderChips();
   for (const id of ["galerie", "projet", "articles", "collections", "index", "sites"]) $("v-" + id).hidden = state.view !== id;
   if (state.view === "galerie") searchGalleryImages();
