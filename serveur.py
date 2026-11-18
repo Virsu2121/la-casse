@@ -51,9 +51,10 @@ PREVIEW_HOSTS = {"www.typographicposters.com", "posterhouse.org", "bpando.org",
                  "signs.org", "madparis.fr", "www.mockupworld.co"}
 PREVIEW_TTL = 21600
 KNOWN_IMAGES = set()  # only images already listed by a feed or Are.na may be analysed
+VIDEO_FILE = re.compile(r"\.(mp4|webm|mov)(\?|$)", re.I)
 JUNK_IMAGE = re.compile(r"gravatar|avatar|emoji|wp-includes|spacer|pixel|/icons?/|favicon", re.I)
 CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-       "font-src https://fonts.gstatic.com; img-src http: https: data:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'")
+       "font-src https://fonts.gstatic.com; img-src http: https: data:; media-src https:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'")
 
 ALLOWED = {"p", "a", "img", "h2", "h3", "h4", "ul", "ol", "li", "blockquote", "em", "strong", "i", "b", "br", "figure", "figcaption"}
 VOID = {"img", "br"}
@@ -70,9 +71,14 @@ class Sanitizer(html.parser.HTMLParser):
 
     def __init__(self, base):
         super().__init__(convert_charrefs=True)
-        self.base, self.out, self.text, self.stack, self.skip, self.images = base, [], [], [], 0, []
+        self.base, self.out, self.text, self.stack, self.skip, self.images, self.videos = base, [], [], [], 0, [], []
 
     def handle_starttag(self, tag, attrs):
+        if tag in ("video", "source"):
+            a = dict(attrs)
+            src = safe_url(a.get("src"), self.base)
+            if src and (tag == "video" or "video" in (a.get("type") or "") or VIDEO_FILE.search(src)) and src not in self.videos:
+                self.videos.append(src)
         if tag in DROPPED:
             self.skip += 1
             return
@@ -164,11 +170,11 @@ def parse_feed(source, raw):
     for el in ET.fromstring(raw).iter():
         if local(el.tag) not in ("item", "entry"):
             continue
-        f, link, attached = {}, "", []
+        f, link, attached, attached_videos = {}, "", [], []
         for c in el:
             name = local(c.tag)
-            if name in ("enclosure", "content", "thumbnail") and c.get("url") and "video" not in c.get("type", ""):
-                attached.append(c.get("url"))
+            if name in ("enclosure", "content", "thumbnail") and c.get("url"):
+                (attached_videos if "video" in c.get("type", "") or VIDEO_FILE.search(c.get("url")) else attached).append(c.get("url"))
             if name == "link":
                 if c.get("href") and c.get("rel", "alternate") == "alternate":
                     link = c.get("href")
@@ -196,7 +202,8 @@ def parse_feed(source, raw):
             "date": to_iso(f.get("pubDate") or f.get("published") or f.get("updated") or f.get("date")),
             "excerpt": text[:260] + ("…" if len(text) > 260 else ""),
             "image": images[0] if images else "",
-            "images": images[:8],
+            "images": images[:60],
+            "videos": [v for v in dict.fromkeys([safe_url(u, link) for u in attached_videos] + san.videos) if v][:6],
             "html": content if len(text) > 300 or len(images) >= 2 else "",
         })
     return items

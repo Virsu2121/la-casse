@@ -30,7 +30,7 @@ def main(out_path):
             images = [image] if image else []
         if images:
             items.append({"source": i["source"], "title": i["title"], "author": i.get("author", ""), "link": i["link"], "date": i["date"],
-                          "images": images, "image": images[0], "excerpt": short(i["excerpt"]), "html": ""})
+                          "images": images, "videos": i.get("videos", []), "image": images[0], "excerpt": short(i["excerpt"]), "html": ""})
     arena = {}
     for term in ARENA_TERMS:
         try:
